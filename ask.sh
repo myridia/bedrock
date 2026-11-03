@@ -8,6 +8,7 @@ show_menu() {
   printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
   printf "%s\n" '  │  1  │ Create new site from Bedrock starter         │'
   printf "%s\n" '  │  2  │ Create .env for docker-compose               │'
+  printf "%s\n" '  │  3  │ Up — docker compose up                       │'
   printf "%s\n" '  │  0  │ Exit                                         │'
   printf "%s\n" '  └─────┴──────────────────────────────────────────────┘'
 }
@@ -60,6 +61,9 @@ while true; do
 
     chmod 600 "$env_file"
     printf "  Wrote %s (mode 600). Do not commit it.\n" "$env_file"
+  elif [ "$task" = "3" ]; then
+    printf "  Up — docker compose -f dockers/docker-compose.yml up\n"
+    docker compose -f dockers/docker-compose.yml up
   else
     printf "  Unknown task: %s\n" "$task"
   fi
