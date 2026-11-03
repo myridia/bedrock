@@ -30,6 +30,8 @@ while true; do
     [ -n "$sitename" ] || { printf "  No name given — aborted.\n"; sleep 2; continue; }
     printf "  Creating new site from Bedrock starter (%s)...\n" "$sitename"
     cd "$SCRIPT_DIR" && docker run --rm -v "$PWD:/app" composer create-project roots/bedrock "$sitename"
+    printf "  Updating docker-compose.yml to serve %s...\n" "$sitename"
+    sed -i "s|../huwi/|../$sitename/|g; s|../huwi:|../$sitename:|g" "$SCRIPT_DIR/dockers/docker-compose.yml"
   else
     printf "  Unknown task: %s\n" "$task"
   fi
