@@ -9,6 +9,7 @@ show_menu() {
   printf "%s\n" '  │  1  │ Create new site from Bedrock starter         │'
   printf "%s\n" '  │  2  │ Create .env for docker-compose               │'
   printf "%s\n" '  │  3  │ Up — docker compose up                       │'
+  printf "%s\n" '  │  4  │ Composer install (vendor/autoload.php)       │'
   printf "%s\n" '  │  0  │ Exit                                         │'
   printf "%s\n" '  └─────┴──────────────────────────────────────────────┘'
 }
@@ -64,6 +65,15 @@ while true; do
   elif [ "$task" = "3" ]; then
     printf "  Up — docker compose -f dockers/docker-compose.yml up\n"
     docker compose -f dockers/docker-compose.yml up
+  elif [ "$task" = "4" ]; then
+    printf "  Composer install (vendor/autoload.php)\n"
+    printf "  Site directory [huwi]: "
+    read site_dir || exit 0
+    [ -n "$site_dir" ] || site_dir="huwi"
+    site_path="$SCRIPT_DIR/$site_dir"
+    [ -f "$site_path/composer.json" ] || { printf "  No composer.json in %s — aborted.\n" "$site_dir"; sleep 2; continue; }
+    printf "  Running composer install in %s...\n" "$site_dir"
+    docker run --rm -v "$site_path:/app" composer install
   else
     printf "  Unknown task: %s\n" "$task"
   fi
