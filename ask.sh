@@ -13,6 +13,7 @@ show_menu() {
   printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
   printf "%s\n" '  │     │ RUN                                          │'
   printf "%s\n" '  │  4  │ Up — docker compose up                       │'
+  printf "%s\n" '  │  5  │ WP-CLI — enter php container for wp-cli       │'
   printf "%s\n" '  │  0  │ Exit                                         │'
   printf "%s\n" '  └─────┴──────────────────────────────────────────────┘'
 }
@@ -77,6 +78,10 @@ while true; do
   elif [ "$task" = "4" ]; then
     printf "  Up — docker compose -f dockers/docker-compose.yml up\n"
     docker compose -f dockers/docker-compose.yml up
+  elif [ "$task" = "5" ]; then
+    printf "  WP-CLI — run wp help or other wp-cli commands\n"
+    printf "  (Use 'wp --allow-root core update' etc.)\n"
+    docker compose -f dockers/docker-compose.yml exec php wp help
   else
     printf "  Unknown task: %s\n" "$task"
   fi

@@ -4,6 +4,7 @@ services:
     image: nginx
     volumes:
       - ../huwi/web/:/usr/share/nginx/html/
+      - ../huwi/config/:/usr/share/nginx/config/
       - ./etc/nginx/conf.d:/etc/nginx/conf.d
       - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf       
     tty: true
@@ -25,6 +26,7 @@ services:
       WORDPRESS_DB_NAME: ${DB_NAME}
     volumes:
       - ../huwi/web/:/usr/share/nginx/html/
+      - ../huwi/vendor:/usr/share/nginx/vendor
       #- ../plugins/imageserver:/usr/share/nginx/html/wp-content/plugins/imageserver
     networks:
       - bedrock_workgroup
@@ -46,29 +48,7 @@ services:
     networks:
       - bedrock_workgroup
 
-  wpcli:
-    image: wordpress:cli    
-    container_name: bedrock_wpcli
-    command: >
-      /bin/sh -c  '
-      sleep 3;
-      tail -F anything '
-    user: root 
-    links:
-      - db:mysql
-
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_TABLE_PREFIX: dx36fd_
-      WORDPRESS_DB_USER: ${DB_USER}
-      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
-      WORDPRESS_DB_NAME: ${DB_NAME}
-      memory: 3g
-    volumes:
-      - ../huwi/web:/var/www/html
-      - ./php.ini:/usr/local/etc/php/conf.d/php.ini      
-    networks:
-      - bedrock_workgroup
+  # wpcli service removed - use ask.sh Task 5 instead
       
   phpmyadmin:
     container_name: bedrock_pma
