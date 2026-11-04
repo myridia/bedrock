@@ -2,13 +2,17 @@
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
+gen_salt() {
+  head -c 48 /dev/urandom | base64 | tr -d '\n='
+}
+
 show_menu() {
   printf "%s\n" '  ┌─────┬──────────────────────────────────────────────┐'
   printf "%s\n" '  │  ID │ Description                                  │'
   printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
   printf "%s\n" '  │     │ SETUP                                        │'
   printf "%s\n" '  │  1  │ Create new site from Bedrock starter         │'
-  printf "%s\n" '  │  2  │ Create .env for docker-compose               │'
+  printf "%s\n" '  │  2  │ Create env files (dockers/.env + site .env)  │'
   printf "%s\n" '  │  3  │ Composer install (vendor/autoload.php)       │'
   printf "%s\n" '  │  4  │ Install WP core (WP-CLI setup)                │'
   printf "%s\n" '  │  5  │ Set WP site config                           │'
@@ -49,8 +53,12 @@ while true; do
     printf "  Updating docker-compose.yml to serve %s...\n" "$sitename"
     sed -i "s|../huwi/|../$sitename/|g; s|../huwi:|../$sitename:|g" "$SCRIPT_DIR/dockers/docker-compose.yml"
   elif [ "$task" = "2" ]; then
-    printf "  Create .env for docker-compose (dockers/.env)\n"
-    env_file="$SCRIPT_DIR/dockers/.env"
+    printf "  Create env files — dockers/.env (compose) + <site>/.env (Bedrock)\n"
+    printf "  Site directory [huwi]: "
+    read site_dir || exit 0
+    [ -n "$site_dir" ] || site_dir="huwi"
+    site_path="$SCRIPT_DIR/$site_dir"
+    [ -d "$site_path" ] || { printf "  No site directory %s — run task 1 first.\n" "$site_dir"; sleep 2; continue; }
 
     printf "  DB_USER [bedrock]: "
     read db_user || exit 0
@@ -58,6 +66,10 @@ while true; do
 
     printf "  DB_PASSWORD: "
     read db_password || exit 0
+    [ -n "$db_password" ] || { printf "  Empty password — aborted.\n"; sleep 2; continue; }
+    case "$db_password" in
+      *"'"*) printf "  Single quotes are not supported in the password — aborted.\n"; sleep 2; continue ;;
+    esac
 
     printf "  DB_NAME [bedrock]: "
     read db_name || exit 0
@@ -65,16 +77,51 @@ while true; do
 
     printf "  MYSQL_ROOT_PASSWORD: "
     read mysql_root_password || exit 0
+    [ -n "$mysql_root_password" ] || { printf "  Empty root password — aborted.\n"; sleep 2; continue; }
 
+    printf "  Site URL [http://localhost]: "
+    read wp_home || exit 0
+    [ -n "$wp_home" ] || wp_home="http://localhost"
+
+    db_prefix="dx36fd_"
+
+    env_file="$SCRIPT_DIR/dockers/.env"
     {
       printf "DB_USER=%s\n" "$db_user"
       printf "DB_PASSWORD=%s\n" "$db_password"
       printf "DB_NAME=%s\n" "$db_name"
       printf "MYSQL_ROOT_PASSWORD=%s\n" "$mysql_root_password"
     } > "$env_file"
-
     chmod 600 "$env_file"
-    printf "  Wrote %s (mode 600). Do not commit it.\n" "$env_file"
+
+    site_env="$site_path/.env"
+    if [ -d "$site_env" ]; then
+      rmdir "$site_env" 2>/dev/null && printf "  Removed empty directory at %s (Docker created it for a missing mount source).\n" "$site_env"
+    fi
+    if [ -d "$site_env" ]; then
+      printf "  %s is still a directory — remove it, then rerun task 2.\n" "$site_env"; sleep 2; continue
+    fi
+    {
+      printf "DB_NAME='%s'\n" "$db_name"
+      printf "DB_USER='%s'\n" "$db_user"
+      printf "DB_PASSWORD='%s'\n" "$db_password"
+      printf "DB_HOST='db'\n"
+      printf "DB_PREFIX='%s'\n" "$db_prefix"
+      printf "WP_ENV='development'\n"
+      printf "WP_HOME='%s'\n" "$wp_home"
+      printf 'WP_SITEURL="${WP_HOME}/wp"\n'
+      printf "AUTH_KEY='%s'\n" "$(gen_salt)"
+      printf "SECURE_AUTH_KEY='%s'\n" "$(gen_salt)"
+      printf "LOGGED_IN_KEY='%s'\n" "$(gen_salt)"
+      printf "NONCE_KEY='%s'\n" "$(gen_salt)"
+      printf "AUTH_SALT='%s'\n" "$(gen_salt)"
+      printf "SECURE_AUTH_SALT='%s'\n" "$(gen_salt)"
+      printf "LOGGED_IN_SALT='%s'\n" "$(gen_salt)"
+      printf "NONCE_SALT='%s'\n" "$(gen_salt)"
+    } > "$site_env"
+    chmod 600 "$site_env"
+
+    printf "  Wrote %s and %s (mode 600). Do not commit them.\n" "$env_file" "$site_env"
   elif [ "$task" = "3" ]; then
     printf "  Composer install (vendor/autoload.php)\n"
     printf "  Site directory [huwi]: "
@@ -86,15 +133,24 @@ while true; do
     docker run --rm -v "$site_path:/app" composer install
   elif [ "$task" = "4" ]; then
     printf "  Setup — install WP core (WP-CLI setup)\n"
-    printf "  Applying permissions first...\n"
-    chown -R 1000:33 "$SCRIPT_DIR/huwi" 2>/dev/null || printf "  chown skipped (may need host user)\n"
-    chmod -R g+w "$SCRIPT_DIR/huwi" 2>/dev/null || printf "  chmod skipped\n"
-    printf "  Checking containers (task 10 must be run first if not up)...\n"
-    docker ps --filter "name=bedrock_" --format '{{.Names}} {{.Status}}' 2>/dev/null | grep -q 'Up' || { printf "  Containers not running — run task 10 first.\n"; exit 0; }
     printf "  Site dir [huwi]: "
-    read site_dir || site_dir="huwi"
-    printf "  Downloading wp-cli.phar and running install...\n"
-    docker compose -f dockers/docker-compose.yml exec -T php sh -c 'curl -fsSL -o /tmp/wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.11.0/wp-cli-2.11.0.phar && chmod +x /tmp/wp-cli.phar && php /tmp/wp-cli.phar --path=/usr/share/nginx/html --allow-root core install --url=http://localhost --title="Bedrock" --admin_user=admin --admin_password=admin --admin_email=admin@example.com' || printf "  WP install failed. Check DB/connections and retry.\n"
+    read site_dir || exit 0
+    [ -n "$site_dir" ] || site_dir="huwi"
+    site_path="$SCRIPT_DIR/$site_dir"
+    site_env="$site_path/.env"
+    if [ -d "$site_env" ]; then
+      printf "  %s is a directory (Docker created it for a missing mount source) — run task 2 to replace it.\n" "$site_env"; sleep 2; continue
+    fi
+    [ -f "$site_env" ] || { printf "  No %s/.env — run task 2 first.\n" "$site_dir"; sleep 2; continue; }
+    printf "  Applying permissions first...\n"
+    chown -R 1000:33 "$site_path" 2>/dev/null || printf "  chown skipped (may need host user)\n"
+    chmod -R g+w "$site_path" 2>/dev/null || printf "  chmod skipped\n"
+    printf "  Checking containers (task 10 must be run first if not up)...\n"
+    docker ps --filter "name=bedrock_" --format '{{.Names}} {{.Status}}' 2>/dev/null | grep -q 'Up' || { printf "  Containers not running — run task 10 first.\n"; sleep 2; continue; }
+    wp_url=$(sed -n "s/^WP_HOME='\(.*\)'/\1/p" "$site_env" | head -n1)
+    [ -n "$wp_url" ] || wp_url="http://localhost"
+    printf "  Downloading wp-cli.phar and running install for %s...\n" "$wp_url"
+    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" exec -T php sh -c "curl -fsSL -o /tmp/wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.11.0/wp-cli-2.11.0.phar && chmod +x /tmp/wp-cli.phar && php /tmp/wp-cli.phar --path=/usr/share/nginx/html --allow-root core install --url=$wp_url --title=Bedrock --admin_user=admin --admin_password=admin --admin_email=admin@example.com" || printf "  WP install failed. Check DB/connections and retry.\n"
   elif [ "$task" = "5" ]; then
     printf "  Setup — set WP site config\n"
   elif [ "$task" = "6" ]; then

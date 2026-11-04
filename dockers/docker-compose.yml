@@ -28,6 +28,7 @@ services:
       - ../huwi/web/:/usr/share/nginx/html/
       - ../huwi/config/:/usr/share/nginx/config/
       - ../huwi/vendor:/usr/share/nginx/vendor
+      - ../huwi/.env:/usr/share/nginx/.env:ro
       #- ../plugins/imageserver:/usr/share/nginx/html/wp-content/plugins/imageserver
     networks:
       - bedrock_workgroup
