@@ -12,12 +12,22 @@ task_id() {
   task_meta "$1" id
 }
 
+group_rank() {
+  case "$1" in
+    SETUP) printf '1' ;;
+    RUN) printf '2' ;;
+    MAINTENANCE) printf '3' ;;
+    *) printf '4' ;;
+  esac
+}
+
 list_tasks() {
   for f in "$TASKS_DIR"/*.sh; do
     [ -f "$f" ] || continue
     [ "${f##*/}" = "lib.sh" ] && continue
-    printf '%s|%s|%s|%s\n' "$(task_id "$f")" "$(task_meta "$f" group)" "$(task_meta "$f" desc)" "$f"
-  done | sort -n -t'|' -k1,1
+    group=$(task_meta "$f" group)
+    printf '%s|%s|%s|%s|%s\n' "$(group_rank "$group")" "$(task_id "$f")" "$group" "$(task_meta "$f" desc)" "$f"
+  done | sort -t'|' -k1,1n -k2,2n
 }
 
 show_menu() {
@@ -25,7 +35,7 @@ show_menu() {
   printf "%s\n" '  │  ID │ Description                                  │'
   printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
   last_group=""
-  list_tasks | while IFS='|' read -r id group desc file; do
+  list_tasks | while IFS='|' read -r rank id group desc file; do
     if [ "$group" != "$last_group" ]; then
       [ -z "$last_group" ] || printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
       printf '  │     │ %-44s │\n' "$group"

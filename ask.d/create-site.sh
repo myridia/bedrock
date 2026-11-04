@@ -8,9 +8,13 @@ TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)
 . "$ROOT/ask.d/lib.sh"
 
-printf "  Site name [wordpress]: "
-read sitename || exit 0
-[ -n "$sitename" ] || sitename="wordpress"
+if [ -n "${SITE_NAME:-}" ]; then
+  sitename=$SITE_NAME
+else
+  printf "  Site name [wordpress]: "
+  read sitename || exit 0
+  [ -n "$sitename" ] || sitename="wordpress"
+fi
 printf "  Creating new site from Bedrock starter (%s)...\n" "$sitename"
 cd "$ROOT" && docker run --rm -v "$ROOT:/app" composer create-project roots/bedrock "$sitename"
 printf "  Updating docker-compose.yml to serve %s...\n" "$sitename"

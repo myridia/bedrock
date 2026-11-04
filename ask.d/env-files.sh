@@ -9,9 +9,13 @@ ROOT=$(cd "$TASK_DIR/.." && pwd)
 . "$ROOT/ask.d/lib.sh"
 
 printf "  Create env files — dockers/.env (compose) + <site>/.env (Bedrock)\n"
-printf "  Site directory [wordpress]: "
-read site_dir || exit 0
-[ -n "$site_dir" ] || site_dir="wordpress"
+if [ -n "${SITE_DIR:-}" ]; then
+  site_dir=$SITE_DIR
+else
+  printf "  Site directory [wordpress]: "
+  read site_dir || exit 0
+  [ -n "$site_dir" ] || site_dir="wordpress"
+fi
 site_path="$ROOT/$site_dir"
 [ -d "$site_path" ] || { printf "  No site directory %s — run task 1 first.\n" "$site_dir"; exit 1; }
 

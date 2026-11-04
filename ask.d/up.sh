@@ -18,9 +18,12 @@ if [ ! -f "$ROOT/$site_dir/.env" ]; then
   printf "  No %s/.env — run task 2 first (Docker would create a directory at the mount path).\n" "$site_dir"; exit 1
 fi
 
-printf "  Mode [foreground/background] (foreground): "
-read mode || exit 0
+mode=${1:-}
+if [ -z "$mode" ]; then
+  printf "  Mode [foreground/background] (foreground): "
+  read mode || exit 0
+fi
 case "$mode" in
-  b|B|background|Background) compose up -d ;;
+  b|B|background|Background|-d|--detach) compose up -d ;;
   *) compose up ;;
 esac

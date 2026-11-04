@@ -9,9 +9,13 @@ ROOT=$(cd "$TASK_DIR/.." && pwd)
 . "$ROOT/ask.d/lib.sh"
 
 printf "  Setup — install WP core + default theme\n"
-printf "  Site dir [wordpress]: "
-read site_dir || exit 0
-[ -n "$site_dir" ] || site_dir="wordpress"
+if [ -n "${SITE_DIR:-}" ]; then
+  site_dir=$SITE_DIR
+else
+  printf "  Site dir [wordpress]: "
+  read site_dir || exit 0
+  [ -n "$site_dir" ] || site_dir="wordpress"
+fi
 site_path="$ROOT/$site_dir"
 site_env="$site_path/.env"
 if [ -d "$site_env" ]; then

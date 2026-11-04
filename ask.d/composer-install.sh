@@ -9,9 +9,13 @@ ROOT=$(cd "$TASK_DIR/.." && pwd)
 . "$ROOT/ask.d/lib.sh"
 
 printf "  Composer install (vendor/autoload.php)\n"
-printf "  Site directory [wordpress]: "
-read site_dir || exit 0
-[ -n "$site_dir" ] || site_dir="wordpress"
+if [ -n "${SITE_DIR:-}" ]; then
+  site_dir=$SITE_DIR
+else
+  printf "  Site directory [wordpress]: "
+  read site_dir || exit 0
+  [ -n "$site_dir" ] || site_dir="wordpress"
+fi
 site_path="$ROOT/$site_dir"
 [ -f "$site_path/composer.json" ] || { printf "  No composer.json in %s — aborted.\n" "$site_dir"; exit 1; }
 printf "  Running composer install in %s...\n" "$site_dir"
