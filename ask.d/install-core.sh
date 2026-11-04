@@ -32,35 +32,25 @@ if [ -z "$(docker ps -q --filter 'name=bedrock_php' --filter 'status=running' 2>
 fi
 
 printf "  Waiting for the database...\n"
-n=0
-until compose exec -T db sh -c 'mariadb-admin ping -h 127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent' >/dev/null 2>&1; do
-  n=$((n + 1))
-  if [ "$n" -ge 30 ]; then
-    printf "  Database not ready after 60s.\n"
-    exit 1
-  fi
-  sleep 2
-done
+wait_for_db 30 || { printf "  Database not ready after 60s.\n"; exit 1; }
 
 wp_url=$(sed -n "s/^WP_HOME='\(.*\)'/\1/p" "$site_env" | head -n1)
 [ -n "$wp_url" ] || wp_url="http://localhost"
 
 printf "  Ensuring WP-CLI in the php container...\n"
-compose exec -T php sh -c "test -x /tmp/wp-cli.phar || (curl -fsSL -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x /tmp/wp-cli.phar)" \
-  || { printf "  Could not install WP-CLI in the php container.\n"; exit 1; }
+ensure_wp_cli || { printf "  Could not install WP-CLI in the php container.\n"; exit 1; }
 
-wp="php /tmp/wp-cli.phar --path=/usr/share/nginx/html/wp --allow-root"
-
-if compose exec -T php sh -c "$wp core is-installed" >/dev/null 2>&1; then
+if wp_cli core is-installed >/dev/null 2>&1; then
   printf "  WP core is already installed — skipping core install.\n"
 else
   printf "  Installing WP core for %s...\n" "$wp_url"
-  compose exec -T php sh -c "$wp core install --url=$wp_url --title=Bedrock --admin_user=admin --admin_password=admin --admin_email=admin@example.com" \
+  wp_cli core install --url="$wp_url" --title=Bedrock --admin_user=admin --admin_password=admin --admin_email=admin@example.com \
     || { printf "  WP install failed. Check DB/connections and retry.\n"; exit 1; }
 fi
 
 printf "  Activating default theme (twentytwentyfive)...\n"
-compose exec -T php sh -c "$wp theme activate twentytwentyfive || $wp theme install twentytwentyfive --activate" \
+wp_cli theme activate twentytwentyfive \
+  || wp_cli theme install twentytwentyfive --activate \
   || { printf "  Theme install/activate failed. Check network and wp-content permissions.\n"; exit 1; }
 
 printf "  Done. Run task 5 to serve the site if the full stack is not up yet.\n"

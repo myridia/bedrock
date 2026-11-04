@@ -45,6 +45,9 @@ All through `ask.sh` (the user runs it, never the agent). The menu is generated 
 - 7–9 — maintenance: status, logs, restart
 - 10 — maintenance: reset the database — `down`, remove the `bedrock_db` volume, so MariaDB re-creates the user from `dockers/.env` on the next start
 - 11 — maintenance: clean — `down --remove-orphans`, remove the `bedrock_db`/`bedrock_wordpress` volumes, and `docker image prune -f`
+- 13 — maintenance: export the database — ensures `bedrock_db` is running, waits for MariaDB, then `mariadb-dump --single-transaction --routines --triggers` into `backups/bedrock-db-<timestamp>.sql` (mode 600). `backups/` is gitignored; the task prints the matching restore command.
+- 14 — maintenance: import a dump — asks the target, **docker is the default** (imports into `bedrock_db` via its `MYSQL_*` env), or `production` (asks host/port/user/password/database and uses the local `mariadb`/`mysql` client, falling back to a temporary `mariadb` container). The dump defaults to the newest `backups/*.sql`, and both paths confirm before overwriting.
+- 15 — maintenance: URL search-replace — asks old (default: `WP_HOME` from the site `.env`) and new URL, starts `db` + `php` if needed, runs `wp search-replace --all-tables --precise --skip-columns=guid --report-changed-only` as a **dry run**, confirms, then applies. `guid` is left untouched. Remember to update `WP_HOME` in the target environment's `.env` too.
 
 The menu sorts by group (SETUP, RUN, MAINTENANCE) and then by `# id:`, so
 TaskIDs are global and stable while the display follows the group ranking.
