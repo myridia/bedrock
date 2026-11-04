@@ -56,9 +56,9 @@ while true; do
     sed -i "s|../huwi/|../$sitename/|g; s|../huwi:|../$sitename:|g" "$SCRIPT_DIR/dockers/docker-compose.yml"
   elif [ "$task" = "2" ]; then
     printf "  Create env files — dockers/.env (compose) + <site>/.env (Bedrock)\n"
-    printf "  Site directory [huwi]: "
+    printf "  Site directory [wordpress]: "
     read site_dir || exit 0
-    [ -n "$site_dir" ] || site_dir="huwi"
+    [ -n "$site_dir" ] || site_dir="wordpress"
     site_path="$SCRIPT_DIR/$site_dir"
     [ -d "$site_path" ] || { printf "  No site directory %s — run task 1 first.\n" "$site_dir"; sleep 2; continue; }
 
@@ -126,18 +126,18 @@ while true; do
     printf "  Wrote %s and %s (mode 600). Do not commit them.\n" "$env_file" "$site_env"
   elif [ "$task" = "3" ]; then
     printf "  Composer install (vendor/autoload.php)\n"
-    printf "  Site directory [huwi]: "
+    printf "  Site directory [wordpress]: "
     read site_dir || exit 0
-    [ -n "$site_dir" ] || site_dir="huwi"
+    [ -n "$site_dir" ] || site_dir="wordpress"
     site_path="$SCRIPT_DIR/$site_dir"
     [ -f "$site_path/composer.json" ] || { printf "  No composer.json in %s — aborted.\n" "$site_dir"; sleep 2; continue; }
     printf "  Running composer install in %s...\n" "$site_dir"
     docker run --rm -v "$site_path:/app" composer install
   elif [ "$task" = "4" ]; then
     printf "  Setup — install WP core (WP-CLI setup)\n"
-    printf "  Site dir [huwi]: "
+    printf "  Site dir [wordpress]: "
     read site_dir || exit 0
-    [ -n "$site_dir" ] || site_dir="huwi"
+    [ -n "$site_dir" ] || site_dir="wordpress"
     site_path="$SCRIPT_DIR/$site_dir"
     site_env="$site_path/.env"
     if [ -d "$site_env" ]; then
@@ -167,7 +167,7 @@ while true; do
   elif [ "$task" = "10" ]; then
     printf "  Run — Up — docker compose -f dockers/docker-compose.yml up\n"
     site_dir=$(sed -n 's|^[[:space:]]*- \.\./\([^/]*\)/\.env:.*|\1|p' "$SCRIPT_DIR/dockers/docker-compose.yml" | head -n1)
-    [ -n "$site_dir" ] || site_dir="huwi"
+    [ -n "$site_dir" ] || site_dir="wordpress"
     if [ -d "$SCRIPT_DIR/$site_dir/.env" ]; then
       printf "  %s/.env is a directory — remove it and run task 2 first.\n" "$site_dir"; sleep 2; continue
     fi
