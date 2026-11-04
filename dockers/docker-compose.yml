@@ -26,6 +26,7 @@ services:
       WORDPRESS_DB_NAME: ${DB_NAME}
     volumes:
       - ../huwi/web/:/usr/share/nginx/html/
+      - ../huwi/config/:/usr/share/nginx/config/
       - ../huwi/vendor:/usr/share/nginx/vendor
       #- ../plugins/imageserver:/usr/share/nginx/html/wp-content/plugins/imageserver
     networks:
