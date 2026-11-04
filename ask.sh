@@ -47,13 +47,17 @@ while true; do
   fi
 
   if [ "$task" = "1" ]; then
-    printf "  Site name: "
+    printf "  Site name [wordpress]: "
     read sitename || exit 0
-    [ -n "$sitename" ] || { printf "  No name given — aborted.\n"; sleep 2; continue; }
+    [ -n "$sitename" ] || sitename="wordpress"
     printf "  Creating new site from Bedrock starter (%s)...\n" "$sitename"
     cd "$SCRIPT_DIR" && docker run --rm -v "$PWD:/app" composer create-project roots/bedrock "$sitename"
     printf "  Updating docker-compose.yml to serve %s...\n" "$sitename"
     sed -i "s|../huwi/|../$sitename/|g; s|../huwi:|../$sitename:|g" "$SCRIPT_DIR/dockers/docker-compose.yml"
+    # Set permissions on new site directory
+    printf "  Applying permissions (chown/chmod) on %s...\n" "$sitename"
+    chown -R 1000:33 "$SCRIPT_DIR/$sitename" 2>/dev/null || printf "  chown skipped (need host user)\n"
+    chmod -R g+w "$SCRIPT_DIR/$sitename" 2>/dev/null || printf "  chmod skipped\n"
   elif [ "$task" = "2" ]; then
     printf "  Create env files — dockers/.env (compose) + <site>/.env (Bedrock)\n"
     printf "  Site directory [wordpress]: "
@@ -77,9 +81,9 @@ while true; do
     read db_name || exit 0
     [ -n "$db_name" ] || db_name="wordpress"
 
-    printf "  MYSQL_ROOT_PASSWORD: "
+    printf "  MYSQL_ROOT_PASSWORD [pass]: "
     read mysql_root_password || exit 0
-    [ -n "$mysql_root_password" ] || { printf "  Empty root password — aborted.\n"; sleep 2; continue; }
+    [ -n "$mysql_root_password" ] || mysql_root_password="pass"
 
     printf "  Site URL [http://localhost]: "
     read wp_home || exit 0
