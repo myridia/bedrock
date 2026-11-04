@@ -62,20 +62,20 @@ while true; do
     site_path="$SCRIPT_DIR/$site_dir"
     [ -d "$site_path" ] || { printf "  No site directory %s — run task 1 first.\n" "$site_dir"; sleep 2; continue; }
 
-    printf "  DB_USER [bedrock]: "
+    printf "  DB_USER [wordpress]: "
     read db_user || exit 0
-    [ -n "$db_user" ] || db_user="bedrock"
+    [ -n "$db_user" ] || db_user="wordpress"
 
-    printf "  DB_PASSWORD: "
+    printf "  DB_PASSWORD [pass]: "
     read db_password || exit 0
-    [ -n "$db_password" ] || { printf "  Empty password — aborted.\n"; sleep 2; continue; }
+    [ -n "$db_password" ] || db_password="pass"
     case "$db_password" in
       *"'"*) printf "  Single quotes are not supported in the password — aborted.\n"; sleep 2; continue ;;
     esac
 
-    printf "  DB_NAME [bedrock]: "
+    printf "  DB_NAME [wordpress]: "
     read db_name || exit 0
-    [ -n "$db_name" ] || db_name="bedrock"
+    [ -n "$db_name" ] || db_name="wordpress"
 
     printf "  MYSQL_ROOT_PASSWORD: "
     read mysql_root_password || exit 0
