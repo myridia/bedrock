@@ -10,7 +10,7 @@ GPL-3.0) for the Salamander jewelry business group. The generated site lives in
 
 - WordPress via roots/bedrock (Composer, `config/` outside the web root)
 - nginx + `myridia/php8.4fpm` + MariaDB + phpMyAdmin, all containers `bedrock_*`
-- Table prefix `dx36fd_`; DB credentials come from gitignored `dockers/.env`
+- Table prefix `wp_` (Bedrock `DB_PREFIX` in `<site>/.env`); DB credentials come from gitignored `dockers/.env`
 
 ## Structure
 
@@ -35,12 +35,14 @@ bedrocks/
 All through `ask.sh` (the user runs it, never the agent):
 
 - 1 — create a new site from the starter (`composer create-project roots/bedrock <sitename>`, then rewrites the `../huwi/` paths in the compose file)
-- 2 — write two env files, both mode 600 and gitignored: `dockers/.env` (compose: DB user/password/name + MySQL root password) and `<site>/.env` (Bedrock: `DB_HOST=db`, `DB_PREFIX=dx36fd_`, `WP_HOME`/`WP_SITEURL`, generated salts)
+- 2 — write two env files, both mode 600 and gitignored: `dockers/.env` (compose: DB user/password/name + MySQL root password) and `<site>/.env` (Bedrock: `DB_HOST=db`, `DB_PREFIX=wp_`, `WP_HOME`/`WP_SITEURL`, generated salts)
 - 3 — `composer install` in the site directory (task 1 already did this; use it only to re-sync dependencies)
-- 4 — install WP core via WP-CLI inside the php container — needs `<site>/.env` from task 2 and the stack up
+- 4 — install WP core via WP-CLI inside the php container — needs `<site>/.env` from task 2 and the stack up. WP-CLI runs with `--path=/usr/share/nginx/html/wp` (Bedrock's `wp-cli.yml` says `path: web/wp`; the core lives in `web/wp`, config in `web/`).
 - 5–9 — site config, DB import/seed, host permissions, volume-mount check, open_basedir/php.ini fix
-- 10 — `docker compose -f dockers/docker-compose.yml up`
+- 10 — `docker compose -f dockers/docker-compose.yml up` (refuses to start if `<site>/.env` is missing or a directory)
 - 11–14 — WP-CLI in php container, status, logs, restart
+- 15 — reset the database: `down`, remove the `bedrock_db` volume, so MariaDB re-creates the user from `dockers/.env` on the next start
+- 16 — clean: `down --remove-orphans` + `docker image prune -f`; volumes and named images are kept
 
 The nginx/php services mount `../huwi/config/` at `/usr/share/nginx/config/`;
 the php service also mounts `../huwi/.env` at `/usr/share/nginx/.env` (Bedrock
@@ -52,6 +54,11 @@ Create the site `.env` (task 2) **before** starting the stack: if the file is
 missing, Docker creates an empty **directory** at that path, and a bind mount
 cannot be swapped under a running container — remove the directory, rerun task 2,
 then recreate the php container.
+
+MariaDB only creates `DB_USER`/`DB_PASSWORD` when the `bedrock_db` volume is
+**first initialized**. Changing credentials in `dockers/.env` later has no effect
+on the existing volume (phpMyAdmin then reports `Access denied for user
+'bedrock'`) — use task 15 to drop the volume and let it re-initialize.
 
 ## Conventions
 

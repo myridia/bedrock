@@ -20,7 +20,6 @@ services:
     image: myridia/php8.4fpm
     environment:
       WORDPRESS_DB_HOST: db
-      WORDPRESS_TABLE_PREFIX: dx36fd_
       WORDPRESS_DB_USER: ${DB_USER}
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
       WORDPRESS_DB_NAME: ${DB_NAME}

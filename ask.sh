@@ -14,19 +14,21 @@ show_menu() {
   printf "%s\n" '  │  1  │ Create new site from Bedrock starter         │'
   printf "%s\n" '  │  2  │ Create env files (dockers/.env + site .env)  │'
   printf "%s\n" '  │  3  │ Composer install (vendor/autoload.php)       │'
-  printf "%s\n" '  │  4  │ Install WP core (WP-CLI setup)                │'
+  printf "%s\n" '  │  4  │ Install WP core (WP-CLI setup)                     │'
   printf "%s\n" '  │  5  │ Set WP site config                           │'
   printf "%s\n" '  │  6  │ Setup DB import / seed                       │'
   printf "%s\n" '  │  7  │ Setup permissions (host dir)                 │'
   printf "%s\n" '  │  8  │ Setup nginx/php volume mount check           │'
-  printf "%s\n" '  │  9  │ Setup open_basedir / config fix               │'
+  printf "%s\n" '  │  9  │ Setup open_basedir / config fix                    │'
   printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
   printf "%s\n" '  │     │ RUN                                          │'
   printf "%s\n" '  │ 10  │ Up — docker compose up                       │'
-  printf "%s\n" '  │ 11  │ WP-CLI — enter php container for wp-cli       │'
+  printf "%s\n" '  │ 11  │ WP-CLI — enter php container for wp-cli            │'
   printf "%s\n" '  │ 12  │ Status — show running containers             │'
   printf "%s\n" '  │ 13  │ Logs — tail nginx/php logs                   │'
   printf "%s\n" '  │ 14  │ Restart — restart the stack                  │'
+  printf "%s\n" '  │ 15  │ Reset DB — drop volume, re-init from .env          │'
+  printf "%s\n" '  │ 16  │ Clean — down, remove volumes + images, prune  │'
   printf "%s\n" '  │  0  │ Exit                                         │'
   printf "%s\n" '  └─────┴──────────────────────────────────────────────┘'
 }
@@ -83,7 +85,7 @@ while true; do
     read wp_home || exit 0
     [ -n "$wp_home" ] || wp_home="http://localhost"
 
-    db_prefix="dx36fd_"
+    db_prefix="wp_"
 
     env_file="$SCRIPT_DIR/dockers/.env"
     {
@@ -150,7 +152,7 @@ while true; do
     wp_url=$(sed -n "s/^WP_HOME='\(.*\)'/\1/p" "$site_env" | head -n1)
     [ -n "$wp_url" ] || wp_url="http://localhost"
     printf "  Downloading wp-cli.phar and running install for %s...\n" "$wp_url"
-    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" exec -T php sh -c "curl -fsSL -o /tmp/wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.11.0/wp-cli-2.11.0.phar && chmod +x /tmp/wp-cli.phar && php /tmp/wp-cli.phar --path=/usr/share/nginx/html --allow-root core install --url=$wp_url --title=Bedrock --admin_user=admin --admin_password=admin --admin_email=admin@example.com" || printf "  WP install failed. Check DB/connections and retry.\n"
+    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" exec -T php sh -c "curl -fsSL -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x /tmp/wp-cli.phar && php /tmp/wp-cli.phar --path=/usr/share/nginx/html/wp --allow-root core install --url=$wp_url --title=Bedrock --admin_user=admin --admin_password=admin --admin_email=admin@example.com" || printf "  WP install failed. Check DB/connections and retry.\n"
   elif [ "$task" = "5" ]; then
     printf "  Setup — set WP site config\n"
   elif [ "$task" = "6" ]; then
@@ -164,11 +166,19 @@ while true; do
     printf "  Setup — open_basedir / config fix (php.ini edited)\n"
   elif [ "$task" = "10" ]; then
     printf "  Run — Up — docker compose -f dockers/docker-compose.yml up\n"
-    docker compose -f dockers/docker-compose.yml up
+    site_dir=$(sed -n 's|^[[:space:]]*- \.\./\([^/]*\)/\.env:.*|\1|p' "$SCRIPT_DIR/dockers/docker-compose.yml" | head -n1)
+    [ -n "$site_dir" ] || site_dir="huwi"
+    if [ -d "$SCRIPT_DIR/$site_dir/.env" ]; then
+      printf "  %s/.env is a directory — remove it and run task 2 first.\n" "$site_dir"; sleep 2; continue
+    fi
+    if [ ! -f "$SCRIPT_DIR/$site_dir/.env" ]; then
+      printf "  No %s/.env — run task 2 first (Docker would create a directory at the mount path).\n" "$site_dir"; sleep 2; continue
+    fi
+    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" up
   elif [ "$task" = "11" ]; then
-    printf "  Run — WP-CLI — enter php container for wp-cli\n"
-    printf "  (Use 'wp --allow-root core update' etc.)\n"
-    docker compose -f dockers/docker-compose.yml exec php wp help
+    printf "  Run — WP-CLI — shell in php container\n"
+    printf "  Inside: php /tmp/wp-cli.phar --path=/usr/share/nginx/html/wp --allow-root <command>\n"
+    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" exec php sh
   elif [ "$task" = "12" ]; then
     printf "  Run — Status — show running containers\n"
     docker compose -f dockers/docker-compose.yml ps
@@ -178,6 +188,31 @@ while true; do
   elif [ "$task" = "14" ]; then
     printf "  Run — Restart — restart the stack\n"
     docker compose -f dockers/docker-compose.yml restart
+  elif [ "$task" = "15" ]; then
+    printf "  Reset DB — drop the bedrock_db volume and re-init from dockers/.env\n"
+    printf "  All data in the database is lost. Continue? [y/N]: "
+    read confirm || exit 0
+    case "$confirm" in
+      y|Y) ;;
+      *) printf "  Aborted.\n"; sleep 2; continue ;;
+    esac
+    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" down
+    docker volume rm bedrock_db 2>/dev/null || printf "  Volume bedrock_db not removed — check 'docker volume ls'.\n"
+    printf "  Remaining bedrock volumes:\n"
+    docker volume ls --filter "name=bedrock" --format '  {{.Name}}'
+    printf "  Done. Task 10 starts the stack again; MariaDB re-creates the user from dockers/.env.\n"
+  elif [ "$task" = "16" ]; then
+    printf "  Clean — down, remove containers/network, remove volumes (bedrock_db / bedrock_wordpress), prune dangling images\n"
+    printf "  Clean — remove this stack's containers/network/volumes and prune dangling images. Continue? [y/N]: "
+    read confirm || exit 0
+    case "$confirm" in
+      y|Y) ;;
+      *) printf "  Aborted.\n"; sleep 2; continue ;;
+    esac
+    docker compose -f "$SCRIPT_DIR/dockers/docker-compose.yml" down --remove-orphans
+    docker image prune -f
+    docker volume rm bedrock_db bedrock_wordpress 2>/dev/null || printf "  Volumes (bedrock_db / bedrock_wordpress) not removed — check manually.\n"
+    printf "  Done. Containers, network, dangling images, and volumes removed.\n"
   else
     printf "  Unknown task: %s\n" "$task"
   fi
