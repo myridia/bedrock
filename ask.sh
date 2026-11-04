@@ -10,10 +10,19 @@ show_menu() {
   printf "%s\n" '  │  1  │ Create new site from Bedrock starter         │'
   printf "%s\n" '  │  2  │ Create .env for docker-compose               │'
   printf "%s\n" '  │  3  │ Composer install (vendor/autoload.php)       │'
+  printf "%s\n" '  │  4  │ Install WP core (WP-CLI setup)                │'
+  printf "%s\n" '  │  5  │ Set WP site config                           │'
+  printf "%s\n" '  │  6  │ Setup DB import / seed                       │'
+  printf "%s\n" '  │  7  │ Setup permissions (host dir)                 │'
+  printf "%s\n" '  │  8  │ Setup nginx/php volume mount check           │'
+  printf "%s\n" '  │  9  │ Setup open_basedir / config fix               │'
   printf "%s\n" '  ├─────┼──────────────────────────────────────────────┤'
   printf "%s\n" '  │     │ RUN                                          │'
-  printf "%s\n" '  │  4  │ Up — docker compose up                       │'
-  printf "%s\n" '  │  5  │ WP-CLI — enter php container for wp-cli       │'
+  printf "%s\n" '  │ 10  │ Up — docker compose up                       │'
+  printf "%s\n" '  │ 11  │ WP-CLI — enter php container for wp-cli       │'
+  printf "%s\n" '  │ 12  │ Status — show running containers             │'
+  printf "%s\n" '  │ 13  │ Logs — tail nginx/php logs                   │'
+  printf "%s\n" '  │ 14  │ Restart — restart the stack                  │'
   printf "%s\n" '  │  0  │ Exit                                         │'
   printf "%s\n" '  └─────┴──────────────────────────────────────────────┘'
 }
@@ -76,12 +85,43 @@ while true; do
     printf "  Running composer install in %s...\n" "$site_dir"
     docker run --rm -v "$site_path:/app" composer install
   elif [ "$task" = "4" ]; then
-    printf "  Up — docker compose -f dockers/docker-compose.yml up\n"
-    docker compose -f dockers/docker-compose.yml up
+    printf "  Setup — install WP core (WP-CLI setup)\n"
+    printf "  Applying permissions first...\n"
+    chown -R 1000:33 "$SCRIPT_DIR/huwi" 2>/dev/null || printf "  chown skipped (may need host user)\n"
+    chmod -R g+w "$SCRIPT_DIR/huwi" 2>/dev/null || printf "  chmod skipped\n"
+    printf "  Checking containers (task 10 must be run first if not up)...\n"
+    docker ps --filter "name=bedrock_" --format '{{.Names}} {{.Status}}' 2>/dev/null | grep -q 'Up' || { printf "  Containers not running — run task 10 first.\n"; exit 0; }
+    printf "  Site dir [huwi]: "
+    read site_dir || site_dir="huwi"
+    printf "  Downloading wp-cli.phar and running install...\n"
+    docker compose -f dockers/docker-compose.yml exec -T php sh -c 'curl -fsSL -o /tmp/wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.11.0/wp-cli-2.11.0.phar && chmod +x /tmp/wp-cli.phar && php /tmp/wp-cli.phar --path=/usr/share/nginx/html --allow-root core install --url=http://localhost --title="Bedrock" --admin_user=admin --admin_password=admin --admin_email=admin@example.com' || printf "  WP install failed. Check DB/connections and retry.\n"
   elif [ "$task" = "5" ]; then
-    printf "  WP-CLI — run wp help or other wp-cli commands\n"
+    printf "  Setup — set WP site config\n"
+  elif [ "$task" = "6" ]; then
+    printf "  Setup — DB import / seed\n"
+  elif [ "$task" = "7" ]; then
+    printf "  Setup — apply host permissions (chown/chmod)\n"
+    printf "  User runs: chown -R 1000:33 %s && chmod -R g+w %s/huwi\n" "$SCRIPT_DIR" "$SCRIPT_DIR"
+  elif [ "$task" = "8" ]; then
+    printf "  Setup — check nginx/php volume mounts in compose\n"
+  elif [ "$task" = "9" ]; then
+    printf "  Setup — open_basedir / config fix (php.ini edited)\n"
+  elif [ "$task" = "10" ]; then
+    printf "  Run — Up — docker compose -f dockers/docker-compose.yml up\n"
+    docker compose -f dockers/docker-compose.yml up
+  elif [ "$task" = "11" ]; then
+    printf "  Run — WP-CLI — enter php container for wp-cli\n"
     printf "  (Use 'wp --allow-root core update' etc.)\n"
     docker compose -f dockers/docker-compose.yml exec php wp help
+  elif [ "$task" = "12" ]; then
+    printf "  Run — Status — show running containers\n"
+    docker compose -f dockers/docker-compose.yml ps
+  elif [ "$task" = "13" ]; then
+    printf "  Run — Logs — tail nginx/php logs\n"
+    docker compose -f dockers/docker-compose.yml logs --tail=50 nginx php
+  elif [ "$task" = "14" ]; then
+    printf "  Run — Restart — restart the stack\n"
+    docker compose -f dockers/docker-compose.yml restart
   else
     printf "  Unknown task: %s\n" "$task"
   fi
