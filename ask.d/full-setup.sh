@@ -25,15 +25,4 @@ sh "$ROOT/ask.d/env-files.sh" || exit 1
 sh "$ROOT/ask.d/composer-install.sh" || exit 1
 sh "$ROOT/ask.d/up.sh" background || exit 1
 
-printf "  Waiting for the database...\n"
-n=0
-until compose exec -T db sh -c 'mariadb-admin ping -h 127.0.0.1 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent' >/dev/null 2>&1; do
-  n=$((n + 1))
-  if [ "$n" -ge 30 ]; then
-    printf "  Database not ready after 60s.\n"
-    exit 1
-  fi
-  sleep 2
-done
-
 sh "$ROOT/ask.d/install-core.sh" || exit 1

@@ -50,7 +50,7 @@ env_file="$ROOT/dockers/.env"
   printf "DB_PASSWORD=%s\n" "$db_password"
   printf "DB_NAME=%s\n" "$db_name"
   printf "MYSQL_ROOT_PASSWORD=%s\n" "$mysql_root_password"
-} > "$env_file"
+} > "$env_file" || { printf "  Cannot write %s — check directory permissions.\n" "$env_file"; exit 1; }
 chmod 600 "$env_file"
 
 site_env="$site_path/.env"
@@ -77,7 +77,8 @@ fi
   printf "SECURE_AUTH_SALT='%s'\n" "$(gen_salt)"
   printf "LOGGED_IN_SALT='%s'\n" "$(gen_salt)"
   printf "NONCE_SALT='%s'\n" "$(gen_salt)"
-} > "$site_env"
+} > "$site_env" || { printf "  Cannot write %s — run task 1 or fix the directory owner.\n" "$site_env"; exit 1; }
 chmod 640 "$site_env"
+chgrp 33 "$site_env" 2>/dev/null || chmod 644 "$site_env"
 
 printf "  Wrote %s (mode 600) and %s (mode 640). Do not commit them.\n" "$env_file" "$site_env"

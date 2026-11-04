@@ -37,10 +37,10 @@ All through `ask.sh` (the user runs it, never the agent). The menu is generated 
 
 - 1 — create a new site from the starter (`composer create-project roots/bedrock <sitename>`, then rewrites the `../huwi/` paths in the compose file; the checked-in compose already points at `../wordpress/`)
 - 2 — write two env files, both gitignored: `dockers/.env` (compose: DB user/password/name + MySQL root password, mode 600) and `<site>/.env` (Bedrock: `DB_HOST=db`, `DB_PREFIX=wp_`, `WP_HOME`/`WP_SITEURL`, generated salts, mode 640 so the php-fpm `www-data` group can read it)
-- 3 — `composer install` in the site directory (task 1 already did this; use it only to re-sync dependencies)
-- 4 — install WP core via WP-CLI inside the php container — needs `<site>/.env` from task 2 and the stack up. WP-CLI runs with `--path=/usr/share/nginx/html/wp` (Bedrock's `wp-cli.yml` says `path: web/wp`; the core lives in `web/wp`, config in `web/`). After install it activates `twentytwentyfive` (Composer-provided), falling back to `wp theme install twentytwentyfive --activate` if missing.
-- 12 — full setup in one run (SETUP group, but numbered last so it does not displace the individual steps): `create-site` → `env-files` → `composer-install` → `up` in the background → wait for MariaDB → `install-core`. It prompts once for the site name and exports `SITE_NAME`/`SITE_DIR` so the child tasks do not ask again.
-- 5 — `docker compose -f dockers/docker-compose.yml up`; asks foreground/background, foreground is the default (refuses to start if `<site>/.env` is missing or a directory)
+- 3 — `composer install` in the site directory (task 1 already did this; use it only to re-sync dependencies). Tasks 1 and 3 run Composer as the host UID with group 33 (`--user "$(id -u):33"`), so the files are not left root-owned and the site `.env` stays writable.
+- 4 — install WP core via WP-CLI inside the php container — needs `<site>/.env` from task 2, but **not** a manually started stack: if `bedrock_php` is not running it starts `db` + `php` with `compose up -d`, waits up to 60 s for MariaDB, then runs WP-CLI with `--path=/usr/share/nginx/html/wp` (Bedrock's `wp-cli.yml` says `path: web/wp`; the core lives in `web/wp`, config in `web/`). It skips the install when `wp core is-installed`, then activates `twentytwentyfive` (Composer-provided), falling back to `wp theme install twentytwentyfive --activate` if missing. Run task 5 afterwards to serve the site.
+- 12 — full setup in one run (SETUP group, but numbered last so it does not displace the individual steps): `create-site` → `env-files` → `composer-install` → `up` in the background → wait for MariaDB → `install-core`. It prompts once for the site name and exports `SITE_NAME`/`SITE_DIR` so the child tasks do not ask again. An existing site directory is reused instead of failing `composer create-project`, so a partial run can be retried.
+- 5 — `docker compose -f dockers/docker-compose.yml up`; asks background/foreground, background is the default (refuses to start if `<site>/.env` is missing or a directory). `./ask.d/up.sh foreground` skips the question.
 - 6 — WP-CLI in php container
 - 7–9 — maintenance: status, logs, restart
 - 10 — maintenance: reset the database — `down`, remove the `bedrock_db` volume, so MariaDB re-creates the user from `dockers/.env` on the next start
@@ -53,7 +53,7 @@ Individual tasks accept the same environment variables as the full setup where
 it saves a prompt: `SITE_NAME` (create-site) and `SITE_DIR` (env-files,
 composer-install, install-core). For example
 `SITE_DIR=wordpress ./ask.d/env-files.sh` skips the directory question, and
-`./ask.d/up.sh background` skips the foreground/background question.
+`./ask.d/up.sh foreground` skips the background/foreground question.
 
 The nginx/php services mount `../wordpress/config/` at `/usr/share/nginx/config/`;
 the php service also mounts `../wordpress/.env` at `/usr/share/nginx/.env` (Bedrock

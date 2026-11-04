@@ -2,13 +2,13 @@
 
 # id: 5
 # group: RUN
-# desc: Up - start stack (foreground/background)
+# desc: Up - start stack (background default)
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)
 . "$ROOT/ask.d/lib.sh"
 
-printf "  Run — Up — docker compose up (foreground default)\n"
+printf "  Run — Up — docker compose up (background default)\n"
 site_dir=$(site_dir_from_compose)
 [ -n "$site_dir" ] || site_dir="wordpress"
 if [ -d "$ROOT/$site_dir/.env" ]; then
@@ -20,10 +20,10 @@ fi
 
 mode=${1:-}
 if [ -z "$mode" ]; then
-  printf "  Mode [foreground/background] (foreground): "
+  printf "  Mode [background/foreground] (background): "
   read mode || exit 0
 fi
 case "$mode" in
-  b|B|background|Background|-d|--detach) compose up -d ;;
-  *) compose up ;;
+  f|F|foreground|Foreground) compose up ;;
+  *) compose up -d ;;
 esac

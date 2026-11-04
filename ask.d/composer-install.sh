@@ -19,4 +19,9 @@ fi
 site_path="$ROOT/$site_dir"
 [ -f "$site_path/composer.json" ] || { printf "  No composer.json in %s — aborted.\n" "$site_dir"; exit 1; }
 printf "  Running composer install in %s...\n" "$site_dir"
-docker run --rm -v "$site_path:/app" composer install
+docker run --rm \
+  --user "$(id -u):33" \
+  -e COMPOSER_HOME=/tmp/composer \
+  -v "$site_path:/app" \
+  composer install \
+  || { printf "  composer install failed — aborted.\n"; exit 1; }
