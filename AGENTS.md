@@ -16,7 +16,8 @@ GPL-3.0) for the Salamander jewelry business group. The generated site lives in
 
 ```
 bedrocks/
-├── ask.sh              # 16-task menu (setup + run)
+├── ask.sh              # menu + dispatcher (built from ask.d/ metadata)
+├── ask.d/              # task scripts by name (+ lib.sh); TaskID is metadata
 ├── bedrock.svg         # README logo
 ├── LICENSE             # GPL-3.0
 ├── .gitignore          # WordPress + dockers/.env
@@ -32,7 +33,7 @@ bedrocks/
 
 ## Build & Run
 
-All through `ask.sh` (the user runs it, never the agent):
+All through `ask.sh` (the user runs it, never the agent). The menu is generated from the `# id:` / `# group:` / `# desc:` metadata at the top of each `ask.d/<name>.sh`; filenames carry no number, so a task can be renumbered or run directly, e.g. `./ask.d/up.sh`.
 
 - 1 — create a new site from the starter (`composer create-project roots/bedrock <sitename>`, then rewrites the `../huwi/` paths in the compose file; the checked-in compose already points at `../wordpress/`)
 - 2 — write two env files, both mode 600 and gitignored: `dockers/.env` (compose: DB user/password/name + MySQL root password) and `<site>/.env` (Bedrock: `DB_HOST=db`, `DB_PREFIX=wp_`, `WP_HOME`/`WP_SITEURL`, generated salts)
@@ -47,9 +48,9 @@ All through `ask.sh` (the user runs it, never the agent):
 The nginx/php services mount `../wordpress/config/` at `/usr/share/nginx/config/`;
 the php service also mounts `../wordpress/.env` at `/usr/share/nginx/.env` (Bedrock
 root). Both mounts are required for the site to come up and for `wp core install`
-to reach the database. Task 1's `sed` rewrites `../huwi/` paths in the compose file
-to the name of the site it creates; the checked-in compose already points at
-`../wordpress/`, so a differently named site needs the mounts edited by hand.
+to reach the database. Task 1's `sed` rewrites the `../huwi/` or `../wordpress/` paths
+in the compose file to the name of the site it creates; the checked-in compose
+already points at `../wordpress/`.
 
 Create the site `.env` (task 2) **before** starting the stack: if the file is
 missing, Docker creates an empty **directory** at that path, and a bind mount
