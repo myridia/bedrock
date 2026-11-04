@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# id: 12
-# group: RUN
+# id: 7
+# group: MAINTENANCE
 # desc: Status - show running containers
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)

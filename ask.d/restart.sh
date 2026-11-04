@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# id: 14
-# group: RUN
+# id: 9
+# group: MAINTENANCE
 # desc: Restart - restart the stack
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)

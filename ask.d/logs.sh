@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# id: 13
-# group: RUN
+# id: 8
+# group: MAINTENANCE
 # desc: Logs - tail nginx/php logs
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)

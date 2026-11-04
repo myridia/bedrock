@@ -33,17 +33,17 @@ bedrocks/
 
 ## Build & Run
 
-All through `ask.sh` (the user runs it, never the agent). The menu is generated from the `# id:` / `# group:` / `# desc:` metadata at the top of each `ask.d/<name>.sh`; filenames carry no number, so a task can be renumbered or run directly, e.g. `./ask.d/up.sh`.
+All through `ask.sh` (the user runs it, never the agent). The menu is generated from the `# id:` / `# group:` / `# desc:` metadata at the top of each `ask.d/<name>.sh`, grouped into SETUP, RUN, and MAINTENANCE; filenames carry no number, so a task can be renumbered or run directly, e.g. `./ask.d/up.sh`.
 
 - 1 — create a new site from the starter (`composer create-project roots/bedrock <sitename>`, then rewrites the `../huwi/` paths in the compose file; the checked-in compose already points at `../wordpress/`)
-- 2 — write two env files, both mode 600 and gitignored: `dockers/.env` (compose: DB user/password/name + MySQL root password) and `<site>/.env` (Bedrock: `DB_HOST=db`, `DB_PREFIX=wp_`, `WP_HOME`/`WP_SITEURL`, generated salts)
+- 2 — write two env files, both gitignored: `dockers/.env` (compose: DB user/password/name + MySQL root password, mode 600) and `<site>/.env` (Bedrock: `DB_HOST=db`, `DB_PREFIX=wp_`, `WP_HOME`/`WP_SITEURL`, generated salts, mode 640 so the php-fpm `www-data` group can read it)
 - 3 — `composer install` in the site directory (task 1 already did this; use it only to re-sync dependencies)
-- 4 — install WP core via WP-CLI inside the php container — needs `<site>/.env` from task 2 and the stack up. WP-CLI runs with `--path=/usr/share/nginx/html/wp` (Bedrock's `wp-cli.yml` says `path: web/wp`; the core lives in `web/wp`, config in `web/`).
-- 5–9 — site config, DB import/seed, host permissions, volume-mount check, open_basedir/php.ini fix
-- 10 — `docker compose -f dockers/docker-compose.yml up` (refuses to start if `<site>/.env` is missing or a directory)
-- 11–14 — WP-CLI in php container, status, logs, restart
-- 15 — reset the database: `down`, remove the `bedrock_db` volume, so MariaDB re-creates the user from `dockers/.env` on the next start
-- 16 — clean: `down --remove-orphans`, remove the `bedrock_db`/`bedrock_wordpress` volumes, and `docker image prune -f`
+- 4 — install WP core via WP-CLI inside the php container — needs `<site>/.env` from task 2 and the stack up. WP-CLI runs with `--path=/usr/share/nginx/html/wp` (Bedrock's `wp-cli.yml` says `path: web/wp`; the core lives in `web/wp`, config in `web/`). After install it activates `twentytwentyfive` (Composer-provided), falling back to `wp theme install twentytwentyfive --activate` if missing.
+- 5 — `docker compose -f dockers/docker-compose.yml up`; asks foreground/background, foreground is the default (refuses to start if `<site>/.env` is missing or a directory)
+- 6 — WP-CLI in php container
+- 7–9 — maintenance: status, logs, restart
+- 10 — maintenance: reset the database — `down`, remove the `bedrock_db` volume, so MariaDB re-creates the user from `dockers/.env` on the next start
+- 11 — maintenance: clean — `down --remove-orphans`, remove the `bedrock_db`/`bedrock_wordpress` volumes, and `docker image prune -f`
 
 The nginx/php services mount `../wordpress/config/` at `/usr/share/nginx/config/`;
 the php service also mounts `../wordpress/.env` at `/usr/share/nginx/.env` (Bedrock
@@ -60,7 +60,7 @@ then recreate the php container.
 MariaDB only creates `DB_USER`/`DB_PASSWORD` when the `bedrock_db` volume is
 **first initialized**. Changing credentials in `dockers/.env` later has no effect
 on the existing volume (phpMyAdmin then reports `Access denied for user
-'bedrock'`) — use task 15 to drop the volume and let it re-initialize.
+'bedrock'`) — use task 10 to drop the volume and let it re-initialize.
 
 ## Conventions
 

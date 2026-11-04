@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# id: 16
-# group: RUN
+# id: 11
+# group: MAINTENANCE
 # desc: Clean - down, remove volumes + images, prune
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)

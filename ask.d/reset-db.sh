@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# id: 15
-# group: RUN
+# id: 10
+# group: MAINTENANCE
 # desc: Reset DB - drop volume, re-init from .env
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -19,4 +19,4 @@ compose down
 docker volume rm bedrock_db 2>/dev/null || printf "  Volume bedrock_db not removed — check 'docker volume ls'.\n"
 printf "  Remaining bedrock volumes:\n"
 docker volume ls --filter "name=bedrock" --format '  {{.Name}}'
-printf "  Done. Task 10 starts the stack again; MariaDB re-creates the user from dockers/.env.\n"
+printf "  Done. Task 5 starts the stack again; MariaDB re-creates the user from dockers/.env.\n"

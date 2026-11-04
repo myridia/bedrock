@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# id: 11
+# id: 6
 # group: RUN
 # desc: WP-CLI - enter php container
 

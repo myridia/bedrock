@@ -74,6 +74,6 @@ fi
   printf "LOGGED_IN_SALT='%s'\n" "$(gen_salt)"
   printf "NONCE_SALT='%s'\n" "$(gen_salt)"
 } > "$site_env"
-chmod 600 "$site_env"
+chmod 640 "$site_env"
 
-printf "  Wrote %s and %s (mode 600). Do not commit them.\n" "$env_file" "$site_env"
+printf "  Wrote %s (mode 600) and %s (mode 640). Do not commit them.\n" "$env_file" "$site_env"
