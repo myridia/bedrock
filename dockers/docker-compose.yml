@@ -1,0 +1,76 @@
+services:
+  nginx:
+    container_name: bedrock_nginx
+    image: nginx
+    volumes:
+      - ../wordpress/web/:/usr/share/nginx/html/
+      - ../wordpress/config/:/usr/share/nginx/config/
+      - ./etc/nginx/conf.d:/etc/nginx/conf.d
+      - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf       
+    tty: true
+    ports:
+     - "80:80"    
+    links:
+      - php
+    networks:
+      - bedrock_workgroup
+        
+  php:
+    container_name: bedrock_php
+    image: myridia/php8.4fpm
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${DB_NAME}
+    volumes:
+      - ../wordpress/web/:/usr/share/nginx/html/
+      - ../wordpress/config/:/usr/share/nginx/config/
+      - ../wordpress/vendor:/usr/share/nginx/vendor
+      - ../wordpress/.env:/usr/share/nginx/.env:ro
+      #- ../plugins/imageserver:/usr/share/nginx/html/wp-content/plugins/imageserver
+    networks:
+      - bedrock_workgroup
+      
+  db:
+    image: mariadb    
+    container_name: bedrock_db
+    volumes:
+      - db:/var/lib/mysql
+      - "./init/:/docker-entrypoint-initdb.d"
+      - "./etc/mysql/my.cnf:/etc/mysql/conf.d/my.cnf"   
+    ports:
+     - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    networks:
+      - bedrock_workgroup
+
+  # wpcli service removed - use ask.sh Task 5 instead
+      
+  phpmyadmin:
+    container_name: bedrock_pma
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "81:80"    
+    environment:
+      PMA_HOST: db 
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - "./etc/phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php"
+    networks:
+      - bedrock_workgroup
+volumes:
+  wordpress:
+    name: bedrock_wordpress
+  db:
+    name: bedrock_db
+    
+networks:
+  bedrock_workgroup:
+    name: bedrock_workgroup
+    driver: bridge
