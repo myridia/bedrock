@@ -1,3 +1,6 @@
+*.gz
+*.sql
+
 dockers/.env
 /wordpress
 /backups/
