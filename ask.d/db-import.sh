@@ -14,7 +14,7 @@ printf "  Target [docker/production] (docker): "
 read target || exit 0
 [ -n "$target" ] || target="docker"
 
-latest=$(ls -1t "$ROOT"/backups/*.sql 2>/dev/null | head -n1)
+latest=$(ls -1t "$ROOT"/backups/*.sql "$ROOT"/backups/*.sql.gz 2>/dev/null | head -n1)
 if [ -n "$latest" ]; then
   printf "  Dump file [%s]: " "$latest"
 else
@@ -54,8 +54,12 @@ case "$target" in
     printf "  Existing tables with the same names will be replaced. "
     confirm_import
 
-    compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mariadb -u"$MYSQL_USER" "$MYSQL_DATABASE"' < "$dump" \
-      || { printf "  Import failed.\n"; exit 1; }
+    case "$dump" in
+      *.gz) gzip -dc "$dump" | compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mariadb -u"$MYSQL_USER" "$MYSQL_DATABASE"' \
+        || { printf "  Import failed.\n"; exit 1; } ;;
+      *)    compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mariadb -u"$MYSQL_USER" "$MYSQL_DATABASE"' < "$dump" \
+        || { printf "  Import failed.\n"; exit 1; } ;;
+    esac
     printf "  Imported into the docker database.\n"
     ;;
 
@@ -87,17 +91,26 @@ case "$target" in
     fi
 
     if [ -n "$client" ]; then
-      MYSQL_PWD="$db_pass" "$client" -h "$db_host" -P "$db_port" -u "$db_user" "$db_name" < "$dump" \
-        || { printf "  Import failed.\n"; exit 1; }
+      case "$dump" in
+        *.gz) gzip -dc "$dump" | MYSQL_PWD="$db_pass" "$client" -h "$db_host" -P "$db_port" -u "$db_user" "$db_name" \
+          || { printf "  Import failed.\n"; exit 1; } ;;
+        *)    MYSQL_PWD="$db_pass" "$client" -h "$db_host" -P "$db_port" -u "$db_user" "$db_name" < "$dump" \
+          || { printf "  Import failed.\n"; exit 1; } ;;
+      esac
     else
       printf "  No local mysql client — using a temporary mariadb container.\n"
       net=""
       case "$db_host" in
         localhost|127.0.0.1) net="--network host" ;;
       esac
-      docker run --rm -i $net -e MYSQL_PWD="$db_pass" mariadb:latest \
-        mariadb -h "$db_host" -P "$db_port" -u "$db_user" "$db_name" < "$dump" \
-        || { printf "  Import failed.\n"; exit 1; }
+      case "$dump" in
+        *.gz) gzip -dc "$dump" | docker run --rm -i $net -e MYSQL_PWD="$db_pass" mariadb:latest \
+          mariadb -h "$db_host" -P "$db_port" -u "$db_user" "$db_name" \
+          || { printf "  Import failed.\n"; exit 1; } ;;
+        *)    docker run --rm -i $net -e MYSQL_PWD="$db_pass" mariadb:latest \
+          mariadb -h "$db_host" -P "$db_port" -u "$db_user" "$db_name" < "$dump" \
+          || { printf "  Import failed.\n"; exit 1; } ;;
+      esac
     fi
     printf "  Imported into the production database.\n"
     ;;
