@@ -44,7 +44,7 @@ init_dir="$ROOT/dockers/init"
 mkdir -p "$init_dir" || { printf "  Cannot create %s.\n" "$init_dir"; exit 1; }
 init_file="$init_dir/bedrock.sql.gz"
 cp "$dump" "$init_file" || { printf "  Could not copy the dump to %s.\n" "$init_file"; exit 1; }
-chmod 600 "$init_file"
+chmod 644 "$init_file"  # entrypoint must be able to read it
 
 printf "  Wrote %s (%s bytes).\n" "$dump" "$(wc -c < "$dump" | tr -d ' ')"
 printf "  Default seed: %s — imported when an empty bedrock_db volume is first initialized.\n" "$init_file"
