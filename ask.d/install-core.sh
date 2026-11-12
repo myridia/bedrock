@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# id: 4
+# id: 14
 # group: SETUP
 # desc: Install WP core + default theme
 
@@ -19,9 +19,9 @@ fi
 site_path="$ROOT/$site_dir"
 site_env="$site_path/.env"
 if [ -d "$site_env" ]; then
-  printf "  %s is a directory (Docker created it for a missing mount source) — run task 2 to replace it.\n" "$site_env"; exit 1
+  printf "  %s is a directory (Docker created it for a missing mount source) — run task 12 to replace it.\n" "$site_env"; exit 1
 fi
-[ -f "$site_env" ] || { printf "  No %s/.env — run task 2 first.\n" "$site_dir"; exit 1; }
+[ -f "$site_env" ] || { printf "  No %s/.env — run task 12 first.\n" "$site_dir"; exit 1; }
 printf "  Applying permissions first...\n"
 chown -R "$(id -u):33" "$site_path" 2>/dev/null || printf "  chown skipped (may need host user)\n"
 chmod -R g+w "$site_path" 2>/dev/null || printf "  chmod skipped\n"
@@ -53,4 +53,4 @@ wp_cli theme activate twentytwentyfive \
   || wp_cli theme install twentytwentyfive --activate \
   || { printf "  Theme install/activate failed. Check network and wp-content permissions.\n"; exit 1; }
 
-printf "  Done. Run task 5 to serve the site if the full stack is not up yet.\n"
+printf "  Done. Run task 21 to serve the site if the full stack is not up yet.\n"

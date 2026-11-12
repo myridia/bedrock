@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 8
+# id: 32
 # group: MAINTENANCE
-# desc: Logs - tail nginx/php logs
+# desc: Logs - tail nginx + php
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

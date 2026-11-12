@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 1
+# id: 11
 # group: SETUP
-# desc: Create new site from Bedrock starter
+# desc: Create site from Bedrock starter
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

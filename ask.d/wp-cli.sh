@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 6
+# id: 23
 # group: RUN
-# desc: WP-CLI - enter php container
+# desc: WP-CLI - shell in php container
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

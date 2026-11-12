@@ -29,3 +29,32 @@ ensure_wp_cli() {
 wp_cli() {
   compose exec -T php php /tmp/wp-cli.phar --path=/usr/share/nginx/html/wp --allow-root "$@"
 }
+
+site_env_value() {
+  key=$1
+  file=$2
+  sed -n "s/^${key}='\([^']*\)'/\1/p" "$file" | head -n1
+}
+
+open_url() {
+  url=$1
+  for cmd in brave-browser brave chromium chromium-browser firefox; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      printf "  Browser: %s\n" "$cmd"
+      "$cmd" "$url" >/dev/null 2>&1 &
+      return 0
+    fi
+  done
+  if [ "$(uname -s)" = "Darwin" ] && [ -d "/Applications/Safari.app" ]; then
+    printf "  Browser: Safari\n"
+    open -a Safari "$url"
+    return 0
+  fi
+  if command -v xdg-open >/dev/null 2>&1; then
+    printf "  Browser: xdg-open\n"
+    xdg-open "$url" >/dev/null 2>&1 &
+    return 0
+  fi
+  printf "  No browser found (brave, chromium, firefox, safari).\n"
+  return 1
+}

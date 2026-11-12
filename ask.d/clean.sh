@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 11
+# id: 35
 # group: MAINTENANCE
-# desc: Clean - down, remove volumes + images, prune
+# desc: Clean - down, volumes + prune
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

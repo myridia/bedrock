@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 14
+# id: 37
 # group: MAINTENANCE
-# desc: Import DB dump (docker/production)
+# desc: Import DB dump (docker/prod)
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

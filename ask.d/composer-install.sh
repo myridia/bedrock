@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 3
+# id: 13
 # group: SETUP
-# desc: Composer install (vendor/autoload.php)
+# desc: Composer install (vendor)
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

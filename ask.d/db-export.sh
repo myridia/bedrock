@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 13
+# id: 36
 # group: MAINTENANCE
-# desc: Export database dump to backups/
+# desc: Export DB dump to backups/
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)

@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 15
+# id: 38
 # group: MAINTENANCE
-# desc: Search-replace URLs (dry run + apply)
+# desc: Search-replace URLs (dry run)
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)
@@ -13,7 +13,7 @@ printf "  Maintenance — search-replace URLs in the database\n"
 site_dir=$(site_dir_from_compose)
 [ -n "$site_dir" ] || site_dir="wordpress"
 site_env="$ROOT/$site_dir/.env"
-[ -f "$site_env" ] || { printf "  No %s/.env — run task 2 first.\n" "$site_dir"; exit 1; }
+[ -f "$site_env" ] || { printf "  No %s/.env — run task 12 first.\n" "$site_dir"; exit 1; }
 
 current_url=$(sed -n "s/^WP_HOME='\(.*\)'/\1/p" "$site_env" | head -n1)
 [ -n "$current_url" ] || current_url="http://localhost"

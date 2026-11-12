@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 7
+# id: 31
 # group: MAINTENANCE
-# desc: Status - show running containers
+# desc: Status - show containers
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)
