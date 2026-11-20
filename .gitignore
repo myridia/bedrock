@@ -1,6 +1,10 @@
+*.gz
+*.sql
+
 dockers/.env
 /wordpress
 /backups/
+/dockers/init/*.sql
 # WordPress - ignore core, configuration, examples, uploads and logs.
 # https://github.com/github/gitignore/blob/main/WordPress.gitignore
 

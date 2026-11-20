@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# id: 12
+# id: 15
 # group: SETUP
-# desc: Full setup (site, env, stack, core)
+# desc: Full setup (all SETUP steps)
 
 TASK_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$TASK_DIR/.." && pwd)
